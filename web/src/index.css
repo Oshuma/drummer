@@ -14,9 +14,27 @@ code {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 30px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .container {
+    padding: 15px;
+  }
 }
 
 .header {
@@ -37,10 +55,28 @@ code {
 .upload-section {
   background: white;
   padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  margin-bottom: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   text-align: center;
+  height: fit-content;
+  position: sticky;
+  top: 20px;
+}
+
+@media (max-width: 768px) {
+  .upload-section {
+    position: static;
+    margin-bottom: 20px;
+    padding: 20px;
+  }
+  
+  .upload-area {
+    padding: 30px 20px;
+  }
+  
+  .upload-area p {
+    font-size: 16px;
+  }
 }
 
 .upload-area {
@@ -83,8 +119,14 @@ code {
 .songs-section {
   background: white;
   padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+@media (max-width: 768px) {
+  .songs-section {
+    padding: 20px;
+  }
 }
 
 .songs-table {
@@ -109,27 +151,100 @@ code {
   background-color: #f8f9fa;
 }
 
+@media (max-width: 768px) {
+  .songs-table {
+    font-size: 14px;
+  }
+  
+  .songs-table th,
+  .songs-table td {
+    padding: 10px 8px;
+  }
+  
+  .songs-table th:nth-child(2),
+  .songs-table td:nth-child(2) {
+    display: none;
+  }
+  
+  .action-button {
+    padding: 6px;
+    font-size: 14px;
+    margin-right: 6px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
 .action-button {
-  background-color: #007bff;
-  color: white;
   border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
+  padding: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  margin-right: 10px;
-  font-size: 14px;
+  margin-right: 8px;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background-color: #f8f9fa;
+  color: #495057;
 }
 
 .action-button:hover {
-  background-color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.action-button.download {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.action-button.download:hover {
+  background-color: #1976d2;
+  color: white;
+}
+
+.action-button.rename {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.action-button.rename:hover {
+  background-color: #f57c00;
+  color: white;
 }
 
 .action-button.delete {
-  background-color: #dc3545;
+  background-color: #ffebee;
+  color: #d32f2f;
 }
 
 .action-button.delete:hover {
-  background-color: #c82333;
+  background-color: #d32f2f;
+  color: white;
+}
+
+.action-button.save {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.action-button.save:hover {
+  background-color: #2e7d32;
+  color: white;
+}
+
+.action-button.cancel {
+  background-color: #fafafa;
+  color: #757575;
+}
+
+.action-button.cancel:hover {
+  background-color: #757575;
+  color: white;
 }
 
 .loading {
@@ -139,28 +254,58 @@ code {
   color: #666;
 }
 
-.error {
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  max-width: 400px;
+}
+
+.toast {
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: slideIn 0.3s ease-out;
+  font-weight: 500;
+}
+
+.toast.error {
   background-color: #f8d7da;
   color: #721c24;
-  padding: 15px;
-  border-radius: 5px;
-  margin-bottom: 20px;
+  border-left: 4px solid #dc3545;
 }
 
-.success {
+.toast.success {
   background-color: #d4edda;
   color: #155724;
-  padding: 15px;
-  border-radius: 5px;
-  margin-bottom: 20px;
+  border-left: 4px solid #28a745;
 }
 
-.info {
+.toast.info {
   background-color: #d1ecf1;
   color: #0c5460;
-  padding: 15px;
-  border-radius: 5px;
-  margin-bottom: 20px;
+  border-left: 4px solid #17a2b8;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .toast-container {
+    left: 20px;
+    right: 20px;
+    max-width: none;
+  }
 }
 
 .rename-input {
@@ -173,9 +318,16 @@ code {
 .progress-section {
   background: white;
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   margin-bottom: 20px;
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .progress-section {
+    padding: 15px;
+  }
 }
 
 .progress-info {

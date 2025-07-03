@@ -187,9 +187,12 @@ function App() {
         <p>Upload your favorite songs and practice without drums</p>
       </div>
 
+      {/* Fixed toast messages */}
       {message && (
-        <div className={messageType === 'error' ? 'error' : messageType === 'info' ? 'info' : 'success'}>
-          {message}
+        <div className="toast-container">
+          <div className={`toast ${messageType === 'error' ? 'error' : messageType === 'info' ? 'info' : 'success'}`}>
+            {message}
+          </div>
         </div>
       )}
 
@@ -208,7 +211,8 @@ function App() {
         </div>
       )}
 
-      <div className="upload-section">
+      <div className="main-content">
+        <div className="upload-section">
         <h2>Upload MP3 File</h2>
         <div
           className="upload-area"
@@ -228,9 +232,9 @@ function App() {
             {uploading ? 'Processing...' : 'Select File'}
           </button>
         </div>
-      </div>
+        </div>
 
-      <div className="songs-section">
+        <div className="songs-section">
         <h2>Your Songs</h2>
         {songs.length === 0 ? (
           <p>No songs uploaded yet. Upload your first MP3 file above!</p>
@@ -268,37 +272,42 @@ function App() {
                     {editingId === song.id ? (
                       <>
                         <button
-                          className="action-button"
+                          className="action-button save"
                           onClick={() => handleRename(song.id)}
+                          title="Save"
                         >
-                          Save
+                          ✓
                         </button>
                         <button
-                          className="action-button"
+                          className="action-button cancel"
                           onClick={cancelEditing}
+                          title="Cancel"
                         >
-                          Cancel
+                          ✕
                         </button>
                       </>
                     ) : (
                       <>
                         <button
-                          className="action-button"
+                          className="action-button download"
                           onClick={() => handleDownload(song.id, song.name)}
+                          title="Download"
                         >
-                          Download
+                          ⬇
                         </button>
                         <button
-                          className="action-button"
+                          className="action-button rename"
                           onClick={() => startEditing(song.id, song.name)}
+                          title="Rename"
                         >
-                          Rename
+                          ✏
                         </button>
                         <button
                           className="action-button delete"
                           onClick={() => handleDelete(song.id)}
+                          title="Delete"
                         >
-                          Delete
+                          🗑
                         </button>
                       </>
                     )}
@@ -308,6 +317,7 @@ function App() {
             </tbody>
           </table>
         )}
+        </div>
       </div>
     </div>
   );
