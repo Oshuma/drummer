@@ -11,6 +11,7 @@ function App() {
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [version, setVersion] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
 
   useEffect(() => {
     fetchSongs();
@@ -99,6 +100,73 @@ function App() {
       }
     } catch (error) {
       showMessage('Upload failed', 'error');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      setUploadFileName('');
+    }
+  };
+
+  const handleYoutubeUpload = async () => {
+    if (!youtubeUrl.trim()) {
+      showMessage('Please enter a YouTube URL', 'error');
+      return;
+    }
+
+    // Basic YouTube URL validation
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/;
+    if (!youtubeRegex.test(youtubeUrl)) {
+      showMessage('Please enter a valid YouTube URL', 'error');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadFileName('YouTube video');
+
+    // YouTube processing steps
+    const progressSteps = [
+      { progress: 15, message: 'Downloading from YouTube...' },
+      { progress: 35, message: 'Converting to audio...' },
+      { progress: 55, message: 'Processing with AI...' },
+      { progress: 75, message: 'Separating audio stems...' },
+      { progress: 90, message: 'Removing drums...' },
+      { progress: 95, message: 'Finalizing...' }
+    ];
+
+    try {
+      // Start progress simulation
+      let currentStep = 0;
+      const progressInterval = setInterval(() => {
+        if (currentStep < progressSteps.length) {
+          setUploadProgress(progressSteps[currentStep].progress);
+          showMessage(progressSteps[currentStep].message, 'info');
+          currentStep++;
+        }
+      }, 3000);
+
+      const response = await fetch('/api/youtube', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: youtubeUrl }),
+      });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (response.ok) {
+        const newSong = await response.json();
+        setSongs([...songs, newSong]);
+        showMessage('YouTube video processed successfully!', 'success');
+        setYoutubeUrl('');
+      } else {
+        const error = await response.json();
+        showMessage(error.error || 'YouTube processing failed', 'error');
+      }
+    } catch (error) {
+      showMessage('YouTube processing failed', 'error');
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -232,24 +300,51 @@ function App() {
 
       <div className="main-content">
         <div className="upload-section">
-        <h2>Upload MP3 File</h2>
-        <div
-          className="upload-area"
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onClick={() => document.getElementById('fileInput').click()}
-        >
-          <p>Drag and drop an MP3 file here or click to select</p>
-          <input
-            id="fileInput"
-            type="file"
-            accept=".mp3"
-            onChange={handleFileChange}
-            style={{ display: 'none' }}
-          />
-          <button className="upload-button" disabled={uploading}>
-            {uploading ? 'Processing...' : 'Select File'}
-          </button>
+        <h2>Add Song</h2>
+        
+        {/* File Upload */}
+        <div className="upload-method">
+          <h3>Upload MP3 File</h3>
+          <div
+            className="upload-area"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onClick={() => document.getElementById('fileInput').click()}
+          >
+            <p>Drag and drop an MP3 file here or click to select</p>
+            <input
+              id="fileInput"
+              type="file"
+              accept=".mp3"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+            <button className="upload-button" disabled={uploading}>
+              {uploading ? 'Processing...' : 'Select File'}
+            </button>
+          </div>
+        </div>
+
+        {/* YouTube URL */}
+        <div className="upload-method">
+          <h3>YouTube URL</h3>
+          <div className="youtube-input">
+            <input
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
+              className="youtube-url-input"
+              disabled={uploading}
+            />
+            <button 
+              className="upload-button youtube-button" 
+              onClick={handleYoutubeUpload}
+              disabled={uploading || !youtubeUrl.trim()}
+            >
+              {uploading ? 'Processing...' : 'Process YouTube'}
+            </button>
+          </div>
         </div>
         </div>
 

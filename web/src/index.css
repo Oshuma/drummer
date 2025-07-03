@@ -116,6 +116,61 @@ code {
   cursor: not-allowed;
 }
 
+.upload-method {
+  margin-bottom: 30px;
+}
+
+.upload-method:last-child {
+  margin-bottom: 0;
+}
+
+.upload-method h3 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.youtube-input {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.youtube-url-input {
+  padding: 12px 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+  background-color: #fff;
+}
+
+.youtube-url-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.youtube-url-input:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.youtube-button {
+  align-self: flex-start;
+}
+
+@media (max-width: 768px) {
+  .youtube-input {
+    gap: 12px;
+  }
+  
+  .youtube-url-input {
+    padding: 10px 12px;
+  }
+}
+
 .songs-section {
   background: white;
   padding: 30px;

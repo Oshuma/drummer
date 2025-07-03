@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,7 +18,43 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const Version = "0.1.0"
+const Version = "0.2.0"
+
+var userAgents = []string{
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0",
+	"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0",
+}
+
+func getRandomUserAgent() string {
+	return userAgents[rand.Intn(len(userAgents))]
+}
+
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	if err != nil {
+		return err
+	}
+
+	return destFile.Sync()
+}
 
 type Song struct {
 	ID        string    `json:"id"`
@@ -53,6 +90,7 @@ func main() {
 	api := r.Group("/api")
 	{
 		api.POST("/upload", uploadSong)
+		api.POST("/youtube", downloadYoutube)
 		api.GET("/songs", getSongs)
 		api.GET("/download/:id", downloadSong)
 		api.GET("/download/:id/original", downloadOriginalSong)
@@ -291,32 +329,46 @@ func removeDrums(inputPath, outputPath string) error {
 	tempDir := filepath.Join("temp", uuid.New().String())
 	defer os.RemoveAll(tempDir)
 	
-	// Use Spleeter to separate stems (vocals, drums, bass, other)
-	cmd := exec.Command("spleeter", "separate", "-p", "spleeter:4stems-16kHz", "-o", tempDir, inputPath)
-	err := cmd.Run()
+	// Use Spleeter's highest fidelity 5-stem model for better separation
+	cmd := exec.Command("spleeter", "separate", 
+		"-p", "spleeter:5stems-16kHz", 
+		"-o", tempDir, 
+		inputPath)
+	output, err := cmd.CombinedOutput()
 	if err != nil {
+		log.Printf("Spleeter separation failed: %v\nOutput: %s", err, string(output))
 		return fmt.Errorf("spleeter separation failed: %w", err)
 	}
 	
 	// Get the base filename without extension
 	baseName := strings.TrimSuffix(filepath.Base(inputPath), ".mp3")
 	
-	// Combine vocals, bass, and other stems (excluding drums)
+	// 5-stem model provides: vocals, drums, bass, piano, other
 	vocalsPath := filepath.Join(tempDir, baseName, "vocals.wav")
 	bassPath := filepath.Join(tempDir, baseName, "bass.wav")
+	pianoPath := filepath.Join(tempDir, baseName, "piano.wav")
 	otherPath := filepath.Join(tempDir, baseName, "other.wav")
 	
-	// Use ffmpeg to mix the non-drum stems and convert to MP3
+	// Use high-quality FFmpeg settings for mixing and encoding
 	cmd = exec.Command("ffmpeg", 
 		"-i", vocalsPath,
 		"-i", bassPath, 
+		"-i", pianoPath,
 		"-i", otherPath,
-		"-filter_complex", "[0:a][1:a][2:a]amix=inputs=3:duration=longest:normalize=0",
-		"-c:a", "mp3",
-		"-b:a", "192k",
+		"-filter_complex", "[0:a][1:a][2:a][3:a]amix=inputs=4:duration=longest:normalize=0:weights=1 1 1 1",
+		"-c:a", "libmp3lame",
+		"-q:a", "0",  // Highest quality VBR
+		"-ar", "44100", // Standard sample rate
+		"-ac", "2", // Stereo
 		"-y", outputPath)
 	
-	return cmd.Run()
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("FFmpeg mixing failed: %v\nOutput: %s", err, string(output))
+		return fmt.Errorf("audio mixing failed: %w", err)
+	}
+	
+	return nil
 }
 
 func cleanupTempFiles() {
@@ -342,6 +394,176 @@ func cleanupTempFiles() {
 		}
 	}
 	log.Println("Cleaned up temporary files on startup")
+}
+
+func downloadYoutubeWithRetry(url string, tempDir string, tempAudioPath string, maxRetries int) error {
+	var lastError error
+	
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		log.Printf("YouTube download attempt %d/%d for URL: %s", attempt, maxRetries, url)
+		
+		// Get random user agent for this attempt
+		userAgent := getRandomUserAgent()
+		
+		// Build yt-dlp command with anti-detection measures
+		cmd := exec.Command("yt-dlp",
+			"--extract-audio",
+			"--audio-format", "mp3",
+			"--audio-quality", "192K",
+			"--output", tempAudioPath,
+			"--no-playlist",
+			"--user-agent", userAgent,
+			"--add-header", "Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+			"--add-header", "Accept-Language:en-US,en;q=0.5",
+			"--add-header", "Accept-Encoding:gzip, deflate, br",
+			"--add-header", "DNT:1",
+			"--add-header", "Connection:keep-alive",
+			"--add-header", "Upgrade-Insecure-Requests:1",
+			"--sleep-interval", "1",
+			"--max-sleep-interval", "5",
+			"--verbose",
+			url)
+		
+		// Capture both stdout and stderr
+		output, err := cmd.CombinedOutput()
+		
+		if err == nil {
+			log.Printf("YouTube download successful on attempt %d", attempt)
+			return nil
+		}
+		
+		lastError = fmt.Errorf("attempt %d failed: %v, output: %s", attempt, err, string(output))
+		log.Printf("YouTube download attempt %d failed: %v", attempt, lastError)
+		
+		// Don't sleep after the last attempt
+		if attempt < maxRetries {
+			// Exponential backoff with jitter
+			sleepTime := time.Duration(attempt*attempt) * time.Second
+			jitter := time.Duration(rand.Intn(1000)) * time.Millisecond
+			totalSleep := sleepTime + jitter
+			
+			log.Printf("Waiting %v before retry...", totalSleep)
+			time.Sleep(totalSleep)
+		}
+	}
+	
+	return fmt.Errorf("all %d attempts failed, last error: %v", maxRetries, lastError)
+}
+
+func downloadYoutube(c *gin.Context) {
+	var req struct {
+		URL string `json:"url"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	if req.URL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "YouTube URL is required"})
+		return
+	}
+
+	// Generate unique ID for this download
+	id := uuid.New().String()
+	tempDir := filepath.Join("temp", id)
+	tempAudioPath := filepath.Join(tempDir, "%(title)s.%(ext)s")
+	originalPath := filepath.Join("uploads", id+".mp3")
+	processedPath := filepath.Join("processed", id+".mp3")
+
+	// Create temp directory for this download
+	err := os.MkdirAll(tempDir, 0755)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temp directory"})
+		return
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Download with retry logic
+	err = downloadYoutubeWithRetry(req.URL, tempDir, tempAudioPath, 3)
+	if err != nil {
+		log.Printf("YouTube download failed after all retries: %v", err)
+		
+		// Provide more specific error messages
+		errorMsg := "Failed to download from YouTube"
+		if strings.Contains(err.Error(), "network") || strings.Contains(err.Error(), "connection") {
+			errorMsg = "Network error: Unable to connect to YouTube"
+		} else if strings.Contains(err.Error(), "permission") || strings.Contains(err.Error(), "forbidden") {
+			errorMsg = "Permission error: Video may be private or restricted"
+		} else if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "404") {
+			errorMsg = "Video not found: Please check the URL"
+		} else if strings.Contains(err.Error(), "age") || strings.Contains(err.Error(), "login") {
+			errorMsg = "Video is age-restricted or requires login"
+		}
+		
+		c.JSON(http.StatusInternalServerError, gin.H{"error": errorMsg})
+		return
+	}
+
+	// Find the downloaded file in the temp directory
+	files, err := os.ReadDir(tempDir)
+	if err != nil || len(files) == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Downloaded file not found"})
+		return
+	}
+	
+	// Get the first (and should be only) file
+	downloadedFile := filepath.Join(tempDir, files[0].Name())
+	
+	// Copy the downloaded file to uploads directory (handle cross-device links)
+	err = copyFile(downloadedFile, originalPath)
+	if err != nil {
+		log.Printf("Failed to copy file from %s to %s: %v", downloadedFile, originalPath, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process downloaded file"})
+		return
+	}
+	
+	// Remove the temporary file after successful copy
+	os.Remove(downloadedFile)
+
+	// Process the file to remove drums
+	err = removeDrums(originalPath, processedPath)
+	if err != nil {
+		// Clean up original file if processing fails
+		os.Remove(originalPath)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process audio"})
+		return
+	}
+
+	// Get video title for the song name
+	titleCmd := exec.Command("yt-dlp", "--get-title", "--no-playlist", "--user-agent", getRandomUserAgent(), req.URL)
+	titleOutput, err := titleCmd.Output()
+	songName := "YouTube Video"
+	if err == nil {
+		songName = strings.TrimSpace(string(titleOutput))
+		// Clean up title for filesystem safety
+		songName = strings.ReplaceAll(songName, "/", "-")
+		songName = strings.ReplaceAll(songName, "\\", "-")
+		if len(songName) > 100 {
+			songName = songName[:100]
+		}
+	}
+
+	// Store song metadata
+	song := &Song{
+		ID:        id,
+		Name:      songName,
+		Original:  originalPath,
+		Processed: processedPath,
+		CreatedAt: time.Now(),
+	}
+	
+	err = saveSong(song)
+	if err != nil {
+		// Clean up files if database save fails
+		os.Remove(originalPath)
+		os.Remove(processedPath)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save song metadata"})
+		return
+	}
+
+	c.JSON(http.StatusOK, song)
 }
 
 func getVersion(c *gin.Context) {

@@ -13,13 +13,14 @@ the ability to delete and rename songs.
 
 Drummer uses **Spleeter**, Deezer's AI-powered source separation library, to accurately separate drums from your music. Spleeter uses deep learning to isolate different instruments and vocals, providing much higher quality drum removal compared to traditional center-channel extraction methods.
 
-The application uses Spleeter's 4-stem model to separate audio into:
+The application uses Spleeter's **5-stem model** for highest fidelity separation into:
 - Vocals
 - Drums  
 - Bass
+- Piano
 - Other instruments
 
-The final output combines vocals, bass, and other instruments while excluding the drums, giving you a clean backing track for practice.
+The final output combines vocals, bass, piano, and other instruments while excluding the drums, giving you a clean, high-fidelity backing track for practice. Audio is processed using the highest quality settings to preserve acoustic accuracy.
 
 ## Architecture
 

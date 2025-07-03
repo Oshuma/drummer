@@ -44,8 +44,12 @@ RUN pip install numpy==1.18.5
 RUN pip install tensorflow==2.5.0
 RUN pip install librosa==0.8.1
 
-# Install Spleeter - models will be downloaded at runtime
+# Install Spleeter and yt-dlp - models will be downloaded at runtime
 RUN pip install spleeter==2.3.2
+RUN pip install --upgrade yt-dlp
+
+# Update yt-dlp to the absolute latest version
+RUN yt-dlp --update-to stable
 
 WORKDIR /app
 
