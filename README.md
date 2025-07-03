@@ -23,11 +23,17 @@ The final output combines vocals, bass, and other instruments while excluding th
 
 ### Backend
 
-Written in Go and deployable in a Docker container. Uses Spleeter for AI-powered drum separation and FFmpeg for audio processing.
+Written in Go and deployable in a Docker container. Uses Spleeter for AI-powered drum separation and FFmpeg for audio processing. Song metadata is persisted using SQLite database for tracking across container restarts.
 
 ### Frontend
 
 Written in React and included with the deployed Docker container.
+
+### Data Persistence
+
+- **Database**: SQLite database stores song metadata (name, file paths, upload date)
+- **Files**: Original and processed audio files are stored in mounted volumes
+- **Volumes**: All data persists across container restarts via Docker volumes
 
 ## Getting Started
 
@@ -44,4 +50,14 @@ Written in React and included with the deployed Docker container.
    ```
 3. Access the application at `http://localhost:8080`
 
-The first run may take longer as Spleeter downloads its pre-trained models.
+The first run may take longer as Spleeter downloads its pre-trained models when processing the first song.
+
+### Data Storage
+
+The application creates the following directories on your host machine:
+- `./uploads/` - Original MP3 files
+- `./processed/` - Processed MP3 files without drums  
+- `./data/` - SQLite database file
+- `./temp/` - Temporary files during processing
+
+All your songs and metadata will persist across container restarts and rebuilds.

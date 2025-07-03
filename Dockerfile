@@ -8,12 +8,15 @@ COPY web/ ./
 RUN npm run build
 
 # Build stage for Go backend
-FROM golang:1.21-alpine as backend-builder
+FROM golang:1.21 as backend-builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY *.go ./
+
+# Build with CGO enabled for SQLite support
+ENV CGO_ENABLED=1
 RUN go build -o drummer
 
 # Final stage
@@ -52,8 +55,8 @@ COPY --from=backend-builder /app/drummer .
 # Copy the React build
 COPY --from=frontend-builder /app/web/build ./web/build
 
-# Create directories for uploads
-RUN mkdir -p uploads processed temp
+# Create directories for uploads and database
+RUN mkdir -p uploads processed temp data
 
 # Expose port
 EXPOSE 8080
