@@ -3,6 +3,8 @@ web/node_modules
 web/build
 uploads
 processed
+temp
+data
 .git
 .gitignore
 README.md

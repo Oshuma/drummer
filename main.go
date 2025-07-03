@@ -32,6 +32,9 @@ func main() {
 	initDB()
 	defer db.Close()
 
+	// Clean up any leftover temporary files on startup
+	cleanupTempFiles()
+
 	r := gin.Default()
 
 	// Serve static files
@@ -162,6 +165,8 @@ func uploadSong(c *gin.Context) {
 
 	_, err = io.Copy(dst, file)
 	if err != nil {
+		// Clean up partial file if copy fails
+		os.Remove(originalPath)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return
 	}
@@ -169,6 +174,8 @@ func uploadSong(c *gin.Context) {
 	// Process the file to remove drums
 	err = removeDrums(originalPath, processedPath)
 	if err != nil {
+		// Clean up original file if processing fails
+		os.Remove(originalPath)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process audio"})
 		return
 	}
@@ -184,6 +191,9 @@ func uploadSong(c *gin.Context) {
 	
 	err = saveSong(song)
 	if err != nil {
+		// Clean up files if database save fails
+		os.Remove(originalPath)
+		os.Remove(processedPath)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save song metadata"})
 		return
 	}
@@ -291,4 +301,29 @@ func removeDrums(inputPath, outputPath string) error {
 		"-y", outputPath)
 	
 	return cmd.Run()
+}
+
+func cleanupTempFiles() {
+	// Clean up any leftover temporary directories
+	tempDir := "temp"
+	if _, err := os.Stat(tempDir); os.IsNotExist(err) {
+		return
+	}
+
+	entries, err := os.ReadDir(tempDir)
+	if err != nil {
+		log.Printf("Failed to read temp directory: %v", err)
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			fullPath := filepath.Join(tempDir, entry.Name())
+			err := os.RemoveAll(fullPath)
+			if err != nil {
+				log.Printf("Failed to remove temp directory %s: %v", fullPath, err)
+			}
+		}
+	}
+	log.Println("Cleaned up temporary files on startup")
 }
