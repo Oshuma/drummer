@@ -1,5 +1,8 @@
 .claude/
 
+.env
+
 data/
 processed/
 uploads/
+web/node_modules/

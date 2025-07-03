@@ -314,6 +314,7 @@ function App() {
             <p>Drag and drop an MP3 file here or click to select</p>
             <input
               id="fileInput"
+              data-testid="fileInput"
               type="file"
               accept=".mp3"
               onChange={handleFileChange}

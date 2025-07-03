@@ -104,13 +104,17 @@ func main() {
 
 func initDB() {
 	var err error
-	db, err = sql.Open("sqlite3", "./data/songs.db")
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "./data/songs.db"
+	}
+	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal("Failed to open database:", err)
 	}
 
 	// Create data directory
-	os.MkdirAll("data", 0755)
+	os.MkdirAll(filepath.Dir(dbPath), 0755)
 
 	// Create songs table
 	createTable := `
@@ -249,6 +253,13 @@ func getSongs(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch songs"})
 		return
 	}
+
+	// Return an empty array if the list is nil
+	if songList == nil {
+		c.JSON(http.StatusOK, make([]*Song, 0))
+		return
+	}
+
 	c.JSON(http.StatusOK, songList)
 }
 
