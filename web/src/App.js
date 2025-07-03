@@ -10,9 +10,11 @@ function App() {
   const [messageType, setMessageType] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
+  const [version, setVersion] = useState('');
 
   useEffect(() => {
     fetchSongs();
+    fetchVersion();
   }, []);
 
   const fetchSongs = async () => {
@@ -22,6 +24,16 @@ function App() {
       setSongs(data || []);
     } catch (error) {
       showMessage('Failed to fetch songs', 'error');
+    }
+  };
+
+  const fetchVersion = async () => {
+    try {
+      const response = await fetch('/api/version');
+      const data = await response.json();
+      setVersion(data.version);
+    } catch (error) {
+      console.error('Failed to fetch version:', error);
     }
   };
 
@@ -319,6 +331,13 @@ function App() {
         )}
         </div>
       </div>
+      
+      {/* Version display */}
+      {version && (
+        <div className="version-display">
+          v{version}
+        </div>
+      )}
     </div>
   );
 }

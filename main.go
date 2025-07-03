@@ -17,6 +17,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const Version = "0.1.0"
+
 type Song struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
@@ -55,6 +57,7 @@ func main() {
 		api.GET("/download/:id", downloadSong)
 		api.DELETE("/songs/:id", deleteSong)
 		api.PUT("/songs/:id", renameSong)
+		api.GET("/version", getVersion)
 	}
 
 	r.Run(":8080")
@@ -326,4 +329,11 @@ func cleanupTempFiles() {
 		}
 	}
 	log.Println("Cleaned up temporary files on startup")
+}
+
+func getVersion(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"version": Version,
+		"name":    "Drummer",
+	})
 }
