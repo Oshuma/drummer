@@ -1,5 +1,7 @@
 # Drummer
 
+![Drummer](drummer.png)
+
 Drummer is an app used to practice your favorite songs. Upload an MP3 and it will
 strip drums from that song using AI-powered source separation and provide an updated MP3 without the drums.
 
