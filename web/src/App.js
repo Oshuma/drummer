@@ -4,6 +4,8 @@ import './App.css';
 function App() {
   const [songs, setSongs] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadFileName, setUploadFileName] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -41,14 +43,39 @@ function App() {
     }
 
     setUploading(true);
+    setUploadProgress(0);
+    setUploadFileName(file.name);
+
+    // Simulate upload progress steps
+    const progressSteps = [
+      { progress: 10, message: 'Uploading file...' },
+      { progress: 30, message: 'Processing with AI...' },
+      { progress: 60, message: 'Separating audio stems...' },
+      { progress: 85, message: 'Removing drums...' },
+      { progress: 95, message: 'Finalizing...' }
+    ];
+
     const formData = new FormData();
     formData.append('file', file);
 
     try {
+      // Start progress simulation
+      let currentStep = 0;
+      const progressInterval = setInterval(() => {
+        if (currentStep < progressSteps.length) {
+          setUploadProgress(progressSteps[currentStep].progress);
+          showMessage(progressSteps[currentStep].message, 'info');
+          currentStep++;
+        }
+      }, 2000);
+
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
       if (response.ok) {
         const newSong = await response.json();
@@ -62,6 +89,8 @@ function App() {
       showMessage('Upload failed', 'error');
     } finally {
       setUploading(false);
+      setUploadProgress(0);
+      setUploadFileName('');
     }
   };
 
@@ -159,8 +188,23 @@ function App() {
       </div>
 
       {message && (
-        <div className={messageType === 'error' ? 'error' : 'success'}>
+        <div className={messageType === 'error' ? 'error' : messageType === 'info' ? 'info' : 'success'}>
           {message}
+        </div>
+      )}
+
+      {uploading && (
+        <div className="progress-section">
+          <div className="progress-info">
+            <span className="progress-filename">{uploadFileName}</span>
+            <span className="progress-percentage">{uploadProgress}%</span>
+          </div>
+          <div className="progress-bar">
+            <div 
+              className="progress-fill" 
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
         </div>
       )}
 
