@@ -134,6 +134,13 @@ function App() {
     link.click();
   };
 
+  const handleDownloadOriginal = (id, name) => {
+    const link = document.createElement('a');
+    link.href = `/api/download/${id}/original`;
+    link.download = `${name}_original.mp3`;
+    link.click();
+  };
+
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this song?')) {
       try {
@@ -303,9 +310,16 @@ function App() {
                         <button
                           className="action-button download"
                           onClick={() => handleDownload(song.id, song.name)}
-                          title="Download"
+                          title="Download (No Drums)"
                         >
                           ⬇
+                        </button>
+                        <button
+                          className="action-button download-original"
+                          onClick={() => handleDownloadOriginal(song.id, song.name)}
+                          title="Download Original"
+                        >
+                          📁
                         </button>
                         <button
                           className="action-button rename"

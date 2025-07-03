@@ -55,6 +55,7 @@ func main() {
 		api.POST("/upload", uploadSong)
 		api.GET("/songs", getSongs)
 		api.GET("/download/:id", downloadSong)
+		api.GET("/download/:id/original", downloadOriginalSong)
 		api.DELETE("/songs/:id", deleteSong)
 		api.PUT("/songs/:id", renameSong)
 		api.GET("/version", getVersion)
@@ -223,6 +224,18 @@ func downloadSong(c *gin.Context) {
 
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s_no_drums.mp3", song.Name))
 	c.File(song.Processed)
+}
+
+func downloadOriginalSong(c *gin.Context) {
+	id := c.Param("id")
+	song, err := getSongByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Song not found"})
+		return
+	}
+
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s_original.mp3", song.Name))
+	c.File(song.Original)
 }
 
 func deleteSong(c *gin.Context) {

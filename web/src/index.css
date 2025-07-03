@@ -207,6 +207,16 @@ code {
   color: white;
 }
 
+.action-button.download-original {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.action-button.download-original:hover {
+  background-color: #7b1fa2;
+  color: white;
+}
+
 .action-button.rename {
   background-color: #fff3e0;
   color: #f57c00;
