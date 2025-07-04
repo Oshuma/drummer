@@ -103,7 +103,7 @@ test('shows error on submitting empty youtube url', async () => {
   // Wait for initial render to complete
   expect(await screen.findByText(/No songs uploaded yet/i)).toBeInTheDocument();
 
-  const youtubeButton = screen.getByRole('button', { name: /Process YouTube/i });
+  const youtubeButton = screen.getByRole('button', { name: /Upload YouTube/i });
   // The button is disabled by default when the input is empty
   expect(youtubeButton).toBeDisabled();
 
@@ -118,7 +118,7 @@ test('shows error on submitting invalid youtube url', async () => {
   expect(await screen.findByText(/No songs uploaded yet/i)).toBeInTheDocument();
 
   const youtubeInput = screen.getByPlaceholderText(/https:\/\/www\.youtube\.com\/watch\?v=/i);
-  const youtubeButton = screen.getByRole('button', { name: /Process YouTube/i });
+  const youtubeButton = screen.getByRole('button', { name: /Upload YouTube/i });
 
   // Use act for user events that cause state updates
   await act(async () => {

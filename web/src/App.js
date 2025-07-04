@@ -271,7 +271,7 @@ function App() {
     <div className="container">
       <div className="header">
         <h1>Drummer</h1>
-        <p>Upload your favorite songs and practice without drums</p>
+        <p>Upload your favorite songs and practice without drums.</p>
       </div>
 
       {/* Fixed toast messages */}
@@ -343,7 +343,7 @@ function App() {
               onClick={handleYoutubeUpload}
               disabled={uploading || !youtubeUrl.trim()}
             >
-              {uploading ? 'Processing...' : 'Process YouTube'}
+              {uploading ? 'Processing...' : 'Upload YouTube'}
             </button>
           </div>
         </div>
@@ -352,7 +352,7 @@ function App() {
         <div className="songs-section">
         <h2>Your Songs</h2>
         {songs.length === 0 ? (
-          <p>No songs uploaded yet. Upload your first MP3 file above!</p>
+          <p>No songs uploaded yet. Upload your first MP3 file!</p>
         ) : (
           <table className="songs-table">
             <thead>
