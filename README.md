@@ -1,5 +1,7 @@
 # Drummer
 
+> Generate an image of a madman playing drums. It should be chaotic and nihilistic.
+
 ![Drummer](drummer.png)
 
 Drummer is an app used to practice your favorite songs. Upload an MP3 and it will
