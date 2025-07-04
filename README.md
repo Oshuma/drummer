@@ -4,12 +4,9 @@
 
 ![Drummer](drummer.png)
 
-Drummer is an app used to practice your favorite songs. Upload an MP3 and it will
-strip drums from that song using AI-powered source separation and provide an updated MP3 without the drums.
+Drummer is an app used to practice your favorite songs. Upload an MP3 file or provide a YouTube URL and it will strip drums from that song using AI-powered source separation and provide an updated MP3 without the drums.
 
-It provides a simple, but elegant, web UI that allows for uploading and downloading
-songs, as well as a table list of all previously uploaded and stripped songs, with
-the ability to delete and rename songs.
+It provides a simple, but elegant, web UI that allows for uploading files, downloading from YouTube, and managing songs, as well as a table list of all previously processed and stripped songs, with the ability to delete and rename songs.
 
 ## Audio Processing
 
@@ -28,7 +25,7 @@ The final output combines vocals, bass, piano, and other instruments while exclu
 
 ### Backend
 
-Written in Go and deployable in a Docker container. Uses Spleeter for AI-powered drum separation and FFmpeg for audio processing. Song metadata is persisted using SQLite database for tracking across container restarts.
+Written in Go and deployable in a Docker container. Uses Spleeter for AI-powered drum separation and FFmpeg for audio processing. Supports both file uploads and YouTube URL downloads using yt-dlp. Song metadata is persisted using SQLite database for tracking across container restarts.
 
 ### Frontend
 
@@ -56,6 +53,16 @@ Written in React and included with the deployed Docker container.
 3. Access the application at `http://localhost:8080`
 
 The first run may take longer as Spleeter downloads its pre-trained models when processing the first song.
+
+### Usage
+
+Once the application is running, you can:
+
+1. **Upload MP3 files**: Click the upload button to select and upload MP3 files from your computer
+2. **Download from YouTube**: Enter a YouTube URL to download and process the audio
+3. **Manage songs**: View, rename, delete, and download your processed songs from the songs table
+
+Both uploaded files and YouTube downloads are processed through the same high-quality drum removal pipeline.
 
 ### Data Storage
 
