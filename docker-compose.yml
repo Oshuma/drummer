@@ -8,4 +8,9 @@ services:
       - ./processed:/app/processed
       - ./data:/app/data
       - ./temp:/app/temp
+    environment:
+      - ENV=${ENV:-development}
+      - NODE_ENV=${ENV:-development}
+      - GO_ENV=${ENV:-development}
+      - GIN_MODE=${GIN_MODE:-debug}
     restart: unless-stopped
