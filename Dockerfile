@@ -1,5 +1,5 @@
 # Build stage for React frontend
-FROM node:18-alpine as frontend-builder
+FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/web
 COPY web/package*.json ./
@@ -8,7 +8,7 @@ COPY web/ ./
 RUN npm run build
 
 # Build stage for Go backend
-FROM golang:1.21 as backend-builder
+FROM golang:1.21 AS backend-builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
