@@ -18,7 +18,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const Version = "0.2.0"
+const Version = "0.3.0"
 
 var userAgents = []string{
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -141,7 +141,7 @@ func saveSong(song *Song) error {
 func getSongByID(id string) (*Song, error) {
 	query := `SELECT id, name, original_path, processed_path, created_at FROM songs WHERE id = ?`
 	row := db.QueryRow(query, id)
-	
+
 	var song Song
 	err := row.Scan(&song.ID, &song.Name, &song.Original, &song.Processed, &song.CreatedAt)
 	if err != nil {
@@ -234,7 +234,7 @@ func uploadSong(c *gin.Context) {
 		Processed: processedPath,
 		CreatedAt: time.Now(),
 	}
-	
+
 	err = saveSong(song)
 	if err != nil {
 		// Clean up files if database save fails
@@ -339,46 +339,46 @@ func removeDrums(inputPath, outputPath string) error {
 	// Create temporary directory for Spleeter output
 	tempDir := filepath.Join("temp", uuid.New().String())
 	defer os.RemoveAll(tempDir)
-	
+
 	// Use Spleeter's highest fidelity 5-stem model for better separation
-	cmd := exec.Command("spleeter", "separate", 
-		"-p", "spleeter:5stems-16kHz", 
-		"-o", tempDir, 
+	cmd := exec.Command("spleeter", "separate",
+		"-p", "spleeter:5stems-16kHz",
+		"-o", tempDir,
 		inputPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Spleeter separation failed: %v\nOutput: %s", err, string(output))
 		return fmt.Errorf("spleeter separation failed: %w", err)
 	}
-	
+
 	// Get the base filename without extension
 	baseName := strings.TrimSuffix(filepath.Base(inputPath), ".mp3")
-	
+
 	// 5-stem model provides: vocals, drums, bass, piano, other
 	vocalsPath := filepath.Join(tempDir, baseName, "vocals.wav")
 	bassPath := filepath.Join(tempDir, baseName, "bass.wav")
 	pianoPath := filepath.Join(tempDir, baseName, "piano.wav")
 	otherPath := filepath.Join(tempDir, baseName, "other.wav")
-	
+
 	// Use high-quality FFmpeg settings for mixing and encoding
-	cmd = exec.Command("ffmpeg", 
+	cmd = exec.Command("ffmpeg",
 		"-i", vocalsPath,
-		"-i", bassPath, 
+		"-i", bassPath,
 		"-i", pianoPath,
 		"-i", otherPath,
 		"-filter_complex", "[0:a][1:a][2:a][3:a]amix=inputs=4:duration=longest:normalize=0:weights=1 1 1 1",
 		"-c:a", "libmp3lame",
-		"-q:a", "0",  // Highest quality VBR
+		"-q:a", "0", // Highest quality VBR
 		"-ar", "44100", // Standard sample rate
 		"-ac", "2", // Stereo
 		"-y", outputPath)
-	
+
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("FFmpeg mixing failed: %v\nOutput: %s", err, string(output))
 		return fmt.Errorf("audio mixing failed: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -409,13 +409,13 @@ func cleanupTempFiles() {
 
 func downloadYoutubeWithRetry(url string, tempDir string, tempAudioPath string, maxRetries int) error {
 	var lastError error
-	
+
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		log.Printf("YouTube download attempt %d/%d for URL: %s", attempt, maxRetries, url)
-		
+
 		// Get random user agent for this attempt
 		userAgent := getRandomUserAgent()
-		
+
 		// Build yt-dlp command with anti-detection measures
 		cmd := exec.Command("yt-dlp",
 			"--extract-audio",
@@ -434,30 +434,30 @@ func downloadYoutubeWithRetry(url string, tempDir string, tempAudioPath string, 
 			"--max-sleep-interval", "5",
 			"--verbose",
 			url)
-		
+
 		// Capture both stdout and stderr
 		output, err := cmd.CombinedOutput()
-		
+
 		if err == nil {
 			log.Printf("YouTube download successful on attempt %d", attempt)
 			return nil
 		}
-		
+
 		lastError = fmt.Errorf("attempt %d failed: %v, output: %s", attempt, err, string(output))
 		log.Printf("YouTube download attempt %d failed: %v", attempt, lastError)
-		
+
 		// Don't sleep after the last attempt
 		if attempt < maxRetries {
 			// Exponential backoff with jitter
 			sleepTime := time.Duration(attempt*attempt) * time.Second
 			jitter := time.Duration(rand.Intn(1000)) * time.Millisecond
 			totalSleep := sleepTime + jitter
-			
+
 			log.Printf("Waiting %v before retry...", totalSleep)
 			time.Sleep(totalSleep)
 		}
 	}
-	
+
 	return fmt.Errorf("all %d attempts failed, last error: %v", maxRetries, lastError)
 }
 
@@ -465,7 +465,7 @@ func downloadYoutube(c *gin.Context) {
 	var req struct {
 		URL string `json:"url"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
@@ -495,7 +495,7 @@ func downloadYoutube(c *gin.Context) {
 	err = downloadYoutubeWithRetry(req.URL, tempDir, tempAudioPath, 3)
 	if err != nil {
 		log.Printf("YouTube download failed after all retries: %v", err)
-		
+
 		// Provide more specific error messages
 		errorMsg := "Failed to download from YouTube"
 		if strings.Contains(err.Error(), "network") || strings.Contains(err.Error(), "connection") {
@@ -507,7 +507,7 @@ func downloadYoutube(c *gin.Context) {
 		} else if strings.Contains(err.Error(), "age") || strings.Contains(err.Error(), "login") {
 			errorMsg = "Video is age-restricted or requires login"
 		}
-		
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": errorMsg})
 		return
 	}
@@ -518,10 +518,10 @@ func downloadYoutube(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Downloaded file not found"})
 		return
 	}
-	
+
 	// Get the first (and should be only) file
 	downloadedFile := filepath.Join(tempDir, files[0].Name())
-	
+
 	// Copy the downloaded file to uploads directory (handle cross-device links)
 	err = copyFile(downloadedFile, originalPath)
 	if err != nil {
@@ -529,7 +529,7 @@ func downloadYoutube(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process downloaded file"})
 		return
 	}
-	
+
 	// Remove the temporary file after successful copy
 	os.Remove(downloadedFile)
 
@@ -564,7 +564,7 @@ func downloadYoutube(c *gin.Context) {
 		Processed: processedPath,
 		CreatedAt: time.Now(),
 	}
-	
+
 	err = saveSong(song)
 	if err != nil {
 		// Clean up files if database save fails
